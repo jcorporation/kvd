@@ -1,0 +1,13 @@
+Checks: '*,
+    -altera-*,
+    -concurrency-mt-unsafe,
+    -cppcoreguidelines-*,
+    -llvmlibc-restrict-system-libc-headers,
+    -misc-include-cleaner,
+    -readability-identifier-length,
+    -readability-implicit-bool-conversion,
+    -readability-magic-numbers,
+    '
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+FormatStyle: none

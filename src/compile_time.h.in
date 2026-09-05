@@ -1,0 +1,27 @@
+/*
+ SPDX-License-Identifier: GPL-3.0-or-later
+ (c) 2026 Juergen Mang <mail@jcgames.de>
+ https://github.com/jcorporation/kvd
+*/
+
+/**
+ * This file contains central definitions and is included in each source file
+ * as first include. Some defines are configured by cmake.
+ */
+
+#ifndef KVD_COMPILE_TIME_H
+#define KVD_COMPILE_TIME_H
+
+// Version from cmake
+#define KVD_VERSION "${PROJECT_VERSION}"
+
+// Default configuration
+#define LISTEN_URI "http://0.0.0.0:8090"
+#define WORKDIR "/var/lib/kvd"
+#define MAX_VALUE_SIZE 1048576
+
+// Log level
+#define LOGLEVEL_MIN 0
+#define LOGLEVEL_MAX 7
+
+#endif
