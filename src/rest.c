@@ -34,6 +34,7 @@ enum {
     HTTP_NOT_FOUND = 404,
     CONTENT_TOO_LARGE = 413,
     NOT_IMPLEMENTED = 501,
+    INSUFFICIENT_STORAGE = 507,
 };
 
 // Public functions
@@ -94,7 +95,9 @@ void http_ev_handler(struct mg_connection *nc, int ev, void *ev_data) {
                 rest_handle_connection_close(nc);
                 return;
             }
-            if (mg_strcmp(hm->method, mg_str("PUT")) == 0) {
+            if (mg_strcmp(hm->method, mg_str("PUT")) == 0 ||
+                mg_strcmp(hm->method, mg_str("POST")) == 0)
+            {
                 rest_put(nc, &caps[1], hm);
                 rest_handle_connection_close(nc);
                 return;
@@ -157,6 +160,11 @@ static void rest_options(struct mg_connection *nc, const struct mg_str *key) {
 
 static void rest_put(struct mg_connection *nc, const struct mg_str *key, struct mg_http_message *hm) {
     const struct t_mg_user_data *mg_user_data = (struct t_mg_user_data *)nc->mgr->userdata;
+
+    if (mg_user_data->kvd_store->numele > MAX_KEYS) {
+        mg_http_reply(nc, INSUFFICIENT_STORAGE, response_headers, "{\"error\":\"Too many keys.\"}");
+        return;
+    }
 
     const struct mg_str *content_type = mg_http_get_header(hm, "content-type");
     if (content_type == NULL) {

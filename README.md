@@ -36,3 +36,4 @@ Options:
 | GET | `/kv1/<key>` | Get a value. |
 | OPTIONS | `/kv1/<key>` | Get key metadata. |
 | PUT | `/kv1/<key>` | Write a key / value pair. |
+| POST | `/kv1/<key>` | Same as PUT. |
