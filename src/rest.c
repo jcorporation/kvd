@@ -120,7 +120,7 @@ void http_ev_handler(struct mg_connection *nc, int ev, void *ev_data) {
 static void rest_get(struct mg_connection *nc, const struct mg_str *key) {
     const struct t_mg_user_data *mg_user_data = (struct t_mg_user_data *)nc->mgr->userdata;
 
-    struct t_kvd_data *data = kvd_store_get(mg_user_data->kvd_store, key);
+    struct t_kvd_data *data = kvd_store_get(mg_user_data->kvd_store, key, false);
     if (data == NULL) {
         mg_http_reply(nc, HTTP_NOT_FOUND, response_headers, "{\"error\":\"Key not found\"}");
         return;
@@ -145,7 +145,7 @@ static void rest_delete(struct mg_connection *nc, const struct mg_str *key) {
 
 static void rest_options(struct mg_connection *nc, const struct mg_str *key) {
     const struct t_mg_user_data *mg_user_data = (struct t_mg_user_data *)nc->mgr->userdata;
-    struct t_kvd_data *data = kvd_store_get(mg_user_data->kvd_store, key);
+    struct t_kvd_data *data = kvd_store_get(mg_user_data->kvd_store, key, false);
     if (data == NULL) {
         mg_http_reply(nc, HTTP_NOT_FOUND, response_headers, "{\"error\":\"Key not found\"}");
         return;

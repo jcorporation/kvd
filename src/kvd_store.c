@@ -39,14 +39,18 @@ void kvd_store_free(rax *rt) {
     raxFree(rt);
 }
 
-struct t_kvd_data *kvd_store_get(rax *kvd_store, const struct mg_str *key) {
+struct t_kvd_data *kvd_store_get(rax *kvd_store, const struct mg_str *key, bool silent) {
     void *data;
     if (raxFind(kvd_store, (unsigned char *)key->buf, key->len, &data) == 1) {
         // Key was found
-        KVD_LOG_DEBUG("Key \"%.*s\" was found.", (int)key->len, key->buf);
+        if (silent == false) {
+            KVD_LOG_DEBUG("Key \"%.*s\" was found.", (int)key->len, key->buf);
+        }
         return (struct t_kvd_data *)data;
     }
-    KVD_LOG_WARN("Key \"%.*s\" not found.", (int)key->len, key->buf);
+    if (silent == false) {
+        KVD_LOG_WARN("Key \"%.*s\" not found.", (int)key->len, key->buf);
+    }
     return NULL;
 }
 
@@ -61,7 +65,7 @@ void kvd_store_delete(rax *kvd_store, const struct mg_str *key) {
 }
 
 enum kvd_result kvd_store_put(rax *kvd_store, const struct mg_str *key, const struct mg_str *value, const struct mg_str *content_type) {
-    struct t_kvd_data *data = kvd_store_get(kvd_store, key);
+    struct t_kvd_data *data = kvd_store_get(kvd_store, key, true);
     if (data == NULL) {
         // Create
         KVD_LOG_DEBUG("Inserting key \"%.*s\"", (int)key->len, key->buf);
