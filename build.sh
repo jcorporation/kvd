@@ -45,12 +45,13 @@ lint() {
     cd src || exit 1
     find ./ -name '*.c' -exec clang-tidy \
       --config-file="$SCRIPT_PATH/.clang-tidy" {} \; >> ../clang-tidy.out 2>/dev/null
-    ERRORS=$(grep -v -E "(memset|memcpy|\^)" ../clang-tidy.out)
+    ERRORS=$(grep -v -E "(memset|memcpy|\^)" ../clang-tidy.out || true)
     if [ -n "$ERRORS" ]
     then
       echo "$ERRORS"
       return 1
     fi
+    return 0
 }
 
 case "$1" in
