@@ -10,6 +10,7 @@
 
 #include "src/kvd_store.h"
 
+#include "src/lib/log.h"
 #include "src/lib/mem.h"
 
 // Private definitions
@@ -42,8 +43,10 @@ struct t_kvd_data *kvd_store_get(rax *kvd_store, const struct mg_str *key) {
     void *data;
     if (raxFind(kvd_store, (unsigned char *)key->buf, key->len, &data) == 1) {
         // Key was found
+        KVD_LOG_DEBUG("Key \"%.*s\" was found.", (int)key->len, key->buf);
         return (struct t_kvd_data *)data;
     }
+    KVD_LOG_WARN("Key \"%.*s\" not found.", (int)key->len, key->buf);
     return NULL;
 }
 
@@ -51,13 +54,17 @@ void kvd_store_delete(rax *kvd_store, const struct mg_str *key) {
     void *data;
     if (raxRemove(kvd_store, (unsigned char *)key->buf, key->len, &data) == 1) {
         kvd_data_free((struct t_kvd_data *)data);
+        KVD_LOG_DEBUG("Key \"%.*s\" deleted.", (int)key->len, key->buf);
+        return;
     }
+    KVD_LOG_WARN("Key \"%.*s\" not found for deletion.", (int)key->len, key->buf);
 }
 
 enum kvd_result kvd_store_put(rax *kvd_store, const struct mg_str *key, const struct mg_str *value, const struct mg_str *content_type) {
     struct t_kvd_data *data = kvd_store_get(kvd_store, key);
     if (data == NULL) {
         // Create
+        KVD_LOG_DEBUG("Inserting key \"%.*s\"", (int)key->len, key->buf);
         data = malloc_assert(sizeof(struct t_kvd_data));
         data->created = time(NULL);
         data->modified = data->created;
@@ -70,6 +77,7 @@ enum kvd_result kvd_store_put(rax *kvd_store, const struct mg_str *key, const st
     }
 
     // Modify
+    KVD_LOG_DEBUG("Updating key \"%.*s\"", (int)key->len, key->buf);
     data->modified = time(NULL);
     free(data->value.buf);
     data->value.len = value->len;
