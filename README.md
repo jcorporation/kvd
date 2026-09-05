@@ -34,5 +34,5 @@ Options:
 | ------ | ---- | ----------- |
 | DELETE | `/kv1/<key>` | Delete a key. |
 | GET | `/kv1/<key>` | Get a value. |
-| OPTION | `/kv1/<key>` | Get key metadata. |
+| OPTIONS | `/kv1/<key>` | Get key metadata. |
 | PUT | `/kv1/<key>` | Write a key / value pair. |
