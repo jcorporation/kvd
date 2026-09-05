@@ -21,10 +21,11 @@ target_include_directories(kvd
 target_sources(kvd
   PRIVATE
     lib/config.c
+    lib/global_data.c
     lib/log.c
     lib/mem.c
-    lib/mg_user_data.c
     lib/options.c
+    lib/signal.c
     kvd_store.c
     main.c
     rest.c

@@ -13,6 +13,6 @@
 
 #include "dist/mongoose/mongoose.h"
 
-void http_ev_handler(struct mg_connection *nc, int ev, void *ev_data);
+void rest_api_handler(struct mg_connection *nc, void *ev_data);
 
 #endif

@@ -8,10 +8,11 @@
 #include "dist/mongoose/mongoose.h"
 #include "src/kvd_store.h"
 #include "src/lib/config.h"
+#include "src/lib/global_data.h"
 #include "src/lib/log.h"
 #include "src/lib/mem.h"
-#include "src/lib/mg_user_data.h"
 #include "src/lib/options.h"
+#include "src/lib/signal.h"
 #include "src/server.h"
 
 #include <errno.h>
@@ -23,7 +24,7 @@
  * @return 0 on success
  */
 int main(int argc, char **argv) {
-    //set logging states
+    // Set initial states
     log_on_tty = isatty(fileno(stdout));
     #ifdef KVD_DEBUG
         set_loglevel(LOG_DEBUG);
@@ -32,15 +33,19 @@ int main(int argc, char **argv) {
         set_loglevel(LOG_NOTICE);
     #endif
 
-    //central data structures
-    rax *kvd_store = kvd_store_init();
-    struct t_mg_user_data *mg_user_data = NULL;
-    struct mg_mgr *mgr = NULL;
     int rc = EXIT_FAILURE;
-    struct t_config *config = kvd_config_new();
+    s_signal_received = 0;
+    signal_init();
+
+    // Central data structures
+    global_data = malloc_assert(sizeof(struct t_global_data));
+    global_data->kvd_store = NULL;
+    global_data->config = kvd_config_new();
+    global_data->mg_mgr = NULL;
+    global_data->listening_id = 0;
 
     //command line option
-    enum handle_options_rc options_rc = handle_options(config, argc, argv);
+    enum handle_options_rc options_rc = handle_options(global_data->config, argc, argv);
     switch(options_rc) {
         case OPTIONS_RC_INVALID:
             //invalid option or error
@@ -66,38 +71,44 @@ int main(int argc, char **argv) {
 
     // Go into workdir
     errno = 0;
-    if (chdir(config->workdir) != 0) {
-        KVD_LOG_ERROR("Main: Can not change directory to \"%s\"", config->workdir);
+    if (chdir(global_data->config->workdir) != 0) {
+        KVD_LOG_ERROR("Main: Can not change directory to \"%s\"", global_data->config->workdir);
         KVD_LOG_ERRNO(errno);
         goto cleanup;
     }
 
-    KVD_LOG_NOTICE("Main: Starting KVD %s", KVD_VERSION);
-    KVD_LOG_INFO("Main: Mongoose %s", MG_VERSION);
+    KVD_LOG_NOTICE("Starting KVD %s", KVD_VERSION);
+    KVD_LOG_INFO("Mongoose %s", MG_VERSION);
 
     // Init HTTP server
-    mg_user_data = mg_user_data_new(config);
-    mg_user_data->kvd_store = kvd_store;
-    mgr = malloc_assert(sizeof(struct mg_mgr));
-    if (mongoose_init(mgr, config, mg_user_data) == false) {
+    global_data->mg_mgr = malloc_assert(sizeof(struct mg_mgr));
+    if (mongoose_init(global_data->mg_mgr, global_data->config) == false) {
         goto cleanup;
     }
 
-    //Run the udpserver
-    mongoose_loop(mgr);
+    // Init kvd store
+    global_data->kvd_store = kvd_store_init();
+
+    //Run the server
+    while (s_signal_received == 0) {
+        // Webserver polling
+        mg_mgr_poll(global_data->mg_mgr, -1);
+    }
+    KVD_LOG_INFO("Server: Stopping");
     rc = EXIT_SUCCESS;
 
     //Try to cleanup all
     cleanup:
 
-    kvd_config_free(config);
-    kvd_store_free(kvd_store);
-
-    if (mgr != NULL) {
-        mongoose_free(mgr);
+    kvd_config_free(global_data->config);
+    if (global_data->kvd_store != NULL) {
+        kvd_store_free(global_data->kvd_store);
     }
-    if (mg_user_data != NULL) {
-        mg_user_data_free(mg_user_data);
+    if (global_data->mg_mgr != NULL) {
+        mongoose_free(global_data->mg_mgr);
+    }
+    if (global_data != NULL) {
+        free(global_data);
     }
     if (rc == EXIT_SUCCESS) {
         printf("Main: Exiting gracefully\n");

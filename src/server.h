@@ -13,12 +13,10 @@
 
 #include "dist/mongoose/mongoose.h"
 #include "src/lib/config.h"
-#include "src/lib/mg_user_data.h"
 
 #include <stdbool.h>
 
-bool mongoose_init(struct mg_mgr *mgr, struct t_config *config, struct t_mg_user_data *mg_user_data);
-void mongoose_loop(struct mg_mgr *mgr);
+bool mongoose_init(struct mg_mgr *mgr, struct t_config *config);
 void mongoose_free(struct mg_mgr *mgr);
 
 #endif
