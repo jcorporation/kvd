@@ -72,6 +72,7 @@ enum kvd_result kvd_store_put(rax *kvd_store, const struct mg_str *key, const st
     // Modify
     data->modified = time(NULL);
     free(data->value.buf);
+    data->value.len = value->len;
     data->value.buf = my_memcpy(value->buf, value->len);
     return KVD_UPDATED;
 }

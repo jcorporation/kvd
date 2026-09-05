@@ -123,8 +123,8 @@ static void rest_get(struct mg_connection *nc, const struct mg_str *key) {
 
     char *content_type_header = mg_mprintf("Content-type: %.*s\r\n"
         "X-KVD-Created: %lld\r\n"
-        "X-KVD-Modified: %lld\r\n"
-        , (int)data->content_type.len, data->content_type.buf,
+        "X-KVD-Modified: %lld\r\n",
+        (int)data->content_type.len, data->content_type.buf,
         (long long)data->created,
         (long long)data->modified
     );
