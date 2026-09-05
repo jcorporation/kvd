@@ -22,7 +22,7 @@ https://github.com/jcorporation/kvd
 
 Options:
   -h, --help              Displays this help
-  -l, --listen <uri>      REST listen URI (default: http://0.0.0.0:8080)
+  -l, --listen <uri>      REST listen URI (default: http://0.0.0.0:8091)
   -o, --loglevel <level>  Syslog loglevel (default: 5 - NOTICE)
   -v, --version           Displays this help
   -w, --workdir <folder>  Working directory (default: /var/lib/kvd)

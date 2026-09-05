@@ -16,7 +16,7 @@
 #define KVD_VERSION "${PROJECT_VERSION}"
 
 // Default configuration
-#define LISTEN_URI "http://0.0.0.0:8090"
+#define LISTEN_URI "http://0.0.0.0:8091"
 #define WORKDIR "/var/lib/kvd"
 #define MAX_VALUE_SIZE 1048576
 
