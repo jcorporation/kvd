@@ -70,9 +70,10 @@ void http_ev_handler(struct mg_connection *nc, int ev, void *ev_data) {
         // Enforce size limit of 1 MB
         if (hm->body.len > MAX_VALUE_SIZE) {
             mg_http_reply(nc, CONTENT_TOO_LARGE, response_headers, 
-                "{\"error\":\"Content too large, max. size is %d byte\"}",
+                "{\"error\":\"Value too large, max. size is %d byte\"}",
                 MAX_VALUE_SIZE
             );
+            KVD_LOG_ERROR("Value too large.");
             rest_handle_connection_close(nc);
             return;
         }
@@ -168,12 +169,14 @@ static void rest_put(struct mg_connection *nc, const struct mg_str *key, struct 
 
     if (mg_user_data->kvd_store->numele > MAX_KEYS) {
         mg_http_reply(nc, INSUFFICIENT_STORAGE, response_headers, "{\"error\":\"Too many keys.\"}");
+        KVD_LOG_ERROR("Too many keys");
         return;
     }
 
     const struct mg_str *content_type = mg_http_get_header(hm, "content-type");
     if (content_type == NULL) {
-        mg_http_reply(nc, BAD_REQUEST, response_headers, "{\"error\":\"Content-Type not found\"}");
+        mg_http_reply(nc, BAD_REQUEST, response_headers, "{\"error\":\"Content-Type header not found\"}");
+        KVD_LOG_ERROR("Content-Type header not found");
         return;
     }
 
