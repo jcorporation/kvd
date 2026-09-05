@@ -78,27 +78,32 @@ void http_ev_handler(struct mg_connection *nc, int ev, void *ev_data) {
         }
 
         // Match uri
-        struct mg_str caps[3];  // Two wildcard symbols '*' plus 1
+        struct mg_str caps[2];  // Two wildcard symbols '*' plus 1
         if (mg_match(hm->uri, mg_str("/kv1/#"), caps)) {
+            if (caps[0].len == 0) {
+                mg_http_reply(nc, BAD_REQUEST, response_headers, "{\"error\":\"Key could not be empty.\"}");
+                rest_handle_connection_close(nc);
+                return;
+            }
             if (mg_strcmp(hm->method, mg_str("GET")) == 0) {
-                rest_get(nc, &caps[1]);
+                rest_get(nc, &caps[0]);
                 rest_handle_connection_close(nc);
                 return;
             }
             if (mg_strcmp(hm->method, mg_str("DELETE")) == 0) {
-                rest_delete(nc, &caps[1]);
+                rest_delete(nc, &caps[0]);
                 rest_handle_connection_close(nc);
                 return;
             }
             if (mg_strcmp(hm->method, mg_str("OPTIONS")) == 0) {
-                rest_options(nc, &caps[1]);
+                rest_options(nc, &caps[0]);
                 rest_handle_connection_close(nc);
                 return;
             }
             if (mg_strcmp(hm->method, mg_str("PUT")) == 0 ||
                 mg_strcmp(hm->method, mg_str("POST")) == 0)
             {
-                rest_put(nc, &caps[1], hm);
+                rest_put(nc, &caps[0], hm);
                 rest_handle_connection_close(nc);
                 return;
             }
