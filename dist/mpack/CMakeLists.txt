@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# (c) 2026 Juergen Mang <mail@jcgames.de>
+# https://github.com/jcorporation/kvd
+
+add_library(mpack "")
+
+target_sources(mpack
+  PRIVATE
+    mpack.c
+    mpack-config.h
+  PUBLIC
+    mpack.h
+)
+
+target_include_directories(mpack
+  PRIVATE
+    ${PROJECT_SOURCE_DIR}
+    ${PROJECT_BINARY_DIR}
+)
+
+if(CMAKE_BUILD_TYPE MATCHES "(Debug|Release|RelWithDebInfo|MinSizeRel)")
+  target_compile_options(mpack
+    PRIVATE
+      "-Wno-format-nonliteral"
+  )
+endif()

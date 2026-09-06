@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# (c) 2025 Juergen Mang <mail@jcgames.de>
-# https://github.com/jcorporation/kebacc
+# (c) 2026 Juergen Mang <mail@jcgames.de>
+# https://github.com/jcorporation/kvd
 
 add_executable(kvd "")
 
@@ -21,9 +21,11 @@ target_include_directories(kvd
 target_sources(kvd
   PRIVATE
     lib/config.c
+    lib/filehandler.c
     lib/global_data.c
     lib/log.c
     lib/mem.c
+    lib/mpack.c
     lib/options.c
     lib/signal.c
     kvd_store.c

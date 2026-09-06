@@ -1,7 +1,7 @@
 /*
  SPDX-License-Identifier: GPL-3.0-or-later
  (c) 2026 Juergen Mang <mail@jcgames.de>
- https://github.com/jcorporation/kebacc
+ https://github.com/jcorporation/kvd
 */
 
 /*! \file
@@ -78,6 +78,11 @@ void rest_api_handler(struct mg_connection *nc, void *ev_data) {
     if (mg_match(hm->uri, mg_str("/kv1/#"), caps)) {
         if (caps[0].len == 0) {
             mg_http_reply(nc, BAD_REQUEST, response_headers, "{\"error\":\"Key could not be empty.\"}");
+            rest_handle_connection_close(nc);
+            return;
+        }
+        if (caps[0].len > MAX_KEY_SIZE) {
+            mg_http_reply(nc, BAD_REQUEST, response_headers, "{\"error\":\"Key is too long.\"}");
             rest_handle_connection_close(nc);
             return;
         }

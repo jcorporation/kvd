@@ -1,7 +1,7 @@
 /*
  SPDX-License-Identifier: GPL-3.0-or-later
- (c) 2025 Juergen Mang <mail@jcgames.de>
- https://github.com/jcorporation/kebacc
+ (c) 2026 Juergen Mang <mail@jcgames.de>
+ https://github.com/jcorporation/kvd
 */
 
 /*! \file
@@ -11,6 +11,7 @@
 #include "src/server.h"
 
 #include "dist/mongoose/mongoose.h"
+#include "src/kvd_store.h"
 #include "src/lib/global_data.h"
 #include "src/lib/log.h"
 #include "src/lib/mem.h"
@@ -21,6 +22,7 @@
 // Private definitions
 
 static void http_ev_handler(struct mg_connection *nc, int ev, void *ev_data);
+static void timer_kvd_store_persist(void *arg);
 static void mongoose_log(char ch, void *param);
 static void handle_wakeup(struct mg_connection *nc, struct mg_str *data);
 
@@ -53,6 +55,9 @@ bool mongoose_init(struct mg_mgr *mgr, struct t_config *config) {
         mongoose_free(mgr);
         return NULL;
     }
+
+    // Add timer to persist kvd store each 5 minutes
+    mg_timer_add(mgr, (unsigned)300000, MG_TIMER_REPEAT, timer_kvd_store_persist, NULL);
 
     return true;
 }
@@ -99,6 +104,15 @@ static void http_ev_handler(struct mg_connection *nc, int ev, void *ev_data) {
 }
 
 /**
+ * Callback function for mongoose timer to persist the kvd store to disc.
+ * @param arg Not used
+ */
+static void timer_kvd_store_persist(void *arg) {
+    (void) arg;
+    kvd_store_persist(global_data->kvd_store);
+}
+
+/**
  * Mongoose logging function
  * @param ch character to log
  * @param param
@@ -136,6 +150,7 @@ static void handle_wakeup(struct mg_connection *nc, struct mg_str *data) {
         case 'W':
             // Persist data to disk
             KVD_LOG_DEBUG("SIGHUP received");
+            kvd_store_persist(global_data->kvd_store);
             break;
         default:
             KVD_LOG_ERROR("Unhandled wakeup data received");

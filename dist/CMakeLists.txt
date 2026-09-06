@@ -3,4 +3,5 @@
 # https://github.com/jcorporation/kvd
 
 add_subdirectory(mongoose)
+add_subdirectory(mpack)
 add_subdirectory(rax)

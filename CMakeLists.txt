@@ -178,6 +178,7 @@ add_subdirectory("src")
 # link all together
 target_link_libraries(kvd
   mongoose
+  mpack
   rax
   ${MATH_LIB}
 )

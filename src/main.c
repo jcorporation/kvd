@@ -1,6 +1,6 @@
 /*
  SPDX-License-Identifier: GPL-3.0-or-later
- (c) 2025 Juergen Mang <mail@jcgames.de>
+ (c) 2026 Juergen Mang <mail@jcgames.de>
  https://github.com/jcorporation/kvd
 */
 
@@ -88,11 +88,11 @@ int main(int argc, char **argv) {
 
     // Init kvd store
     global_data->kvd_store = kvd_store_init();
+    kvd_store_read(global_data->kvd_store);
 
     //Run the server
     while (s_signal_received == 0) {
-        // Webserver polling
-        mg_mgr_poll(global_data->mg_mgr, -1);
+        mg_mgr_poll(global_data->mg_mgr, 60000);
     }
     KVD_LOG_INFO("Server: Stopping");
     rc = EXIT_SUCCESS;
@@ -102,6 +102,7 @@ int main(int argc, char **argv) {
 
     kvd_config_free(global_data->config);
     if (global_data->kvd_store != NULL) {
+        kvd_store_persist(global_data->kvd_store);
         kvd_store_free(global_data->kvd_store);
     }
     if (global_data->mg_mgr != NULL) {
