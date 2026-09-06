@@ -19,6 +19,7 @@
 #include "src/lib/log.h"
 
 // Private functions
+static void rest_list(struct mg_connection *nc);
 static void rest_get(struct mg_connection *nc, const struct mg_str *key);
 static void rest_delete(struct mg_connection *nc, const struct mg_str *key);
 static void rest_options(struct mg_connection *nc, const struct mg_str *key);
@@ -74,7 +75,12 @@ void rest_api_handler(struct mg_connection *nc, void *ev_data) {
     }
 
     // Match uri
-    struct mg_str caps[2];  // Two wildcard symbols '*' plus 1
+    struct mg_str caps[2];
+    if (mg_match(hm->uri, mg_str("/kv1/"), NULL)) {
+        rest_list(nc);
+        rest_handle_connection_close(nc);
+        return;
+    }
     if (mg_match(hm->uri, mg_str("/kv1/#"), caps)) {
         if (caps[0].len == 0) {
             mg_http_reply(nc, BAD_REQUEST, response_headers, "{\"error\":\"Key could not be empty.\"}");
@@ -117,6 +123,36 @@ void rest_api_handler(struct mg_connection *nc, void *ev_data) {
 
 // Private functions
 
+static void rest_list(struct mg_connection *nc) {
+    raxIterator iter;
+    raxStart(&iter, global_data->kvd_store);
+    raxSeek(&iter, "^", NULL, 0);
+    size_t i = 0;
+
+    mg_printf(nc, "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
+    mg_http_printf_chunk(nc, "{\"result\":{");
+    while (raxNext(&iter)) {
+        const struct t_kvd_data *data = (struct t_kvd_data *)iter.data;
+        mg_http_printf_chunk(nc, "%s%m: {"
+                "%m: %m,"
+                "%m: %lld,"
+                "%m: %lld,"
+                "%m: %lld"
+            "}",
+            (i == 0 ? "" : "," ),
+            mg_print_esc, (int)iter.key_len, iter.key,
+            MG_ESC("content-type"), mg_print_esc, (int)data->content_type.len, data->content_type.buf,
+            MG_ESC("created"), (long long)data->created,
+            MG_ESC("modified"), (long long)data->modified,
+            MG_ESC("size"), (long long)data->value.len
+        );
+        i++;
+    }
+    raxStop(&iter);
+    mg_http_printf_chunk(nc, "}}");
+    mg_http_printf_chunk(nc, "");
+}
+
 static void rest_get(struct mg_connection *nc, const struct mg_str *key) {
     struct t_kvd_data *data = kvd_store_get(global_data->kvd_store, key, false);
     if (data == NULL) {
@@ -150,12 +186,14 @@ static void rest_options(struct mg_connection *nc, const struct mg_str *key) {
         "{%m:{"
             "%m: %m,"
             "%m: %lld,"
+            "%m: %lld,"
             "%m: %lld"
         "}}",
         MG_ESC("result"),
         MG_ESC("content-type"), mg_print_esc, (int)data->content_type.len, data->content_type.buf,
         MG_ESC("created"), (long long)data->created,
-        MG_ESC("modified"), (long long)data->modified
+        MG_ESC("modified"), (long long)data->modified,
+        MG_ESC("size"), (long long)data->value.len
     );
 }
 
