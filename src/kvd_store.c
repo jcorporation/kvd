@@ -14,6 +14,7 @@
 
 #include "dist/mpack/mpack.h"
 #include "src/lib/filehandler.h"
+#include "src/lib/global_data.h"
 #include "src/lib/log.h"
 #include "src/lib/mem.h"
 #include "src/lib/mpack.h"
@@ -64,6 +65,7 @@ void kvd_store_delete(rax *kvd_store, const struct mg_str *key) {
     if (raxRemove(kvd_store, (unsigned char *)key->buf, key->len, &data) == 1) {
         kvd_data_free((struct t_kvd_data *)data);
         KVD_LOG_DEBUG("Key \"%.*s\" deleted.", (int)key->len, key->buf);
+        global_data->kvd_store_mtime = time(NULL);
         return;
     }
     KVD_LOG_WARN("Key \"%.*s\" not found for deletion.", (int)key->len, key->buf);
@@ -82,6 +84,7 @@ enum kvd_result kvd_store_put(rax *kvd_store, const struct mg_str *key, const st
         data->content_type.len = content_type->len;
         data->content_type.buf = my_memcpy(content_type->buf, content_type->len);
         raxInsert(kvd_store, (unsigned char *)key->buf, key->len, data , NULL);
+        global_data->kvd_store_mtime = time(NULL);
         return KVD_CREATED;
     }
 
@@ -91,6 +94,7 @@ enum kvd_result kvd_store_put(rax *kvd_store, const struct mg_str *key, const st
     free(data->value.buf);
     data->value.len = value->len;
     data->value.buf = my_memcpy(value->buf, value->len);
+    global_data->kvd_store_mtime = time(NULL);
     return KVD_UPDATED;
 }
 
@@ -149,11 +153,17 @@ bool kvd_store_read(rax *kvd_store) {
     }
     else {
         KVD_LOG_INFO("Read %" PRIu64 " key(s) from disc", kvd_store->numele);
+        global_data->kvd_store_mtime = time(NULL);
     }
     return rc;
 }
 
 bool kvd_store_persist(rax *kvd_store) {
+    time_t mtime = get_mtime(KVD_STORE_FILENAME);
+    if (global_data->kvd_store_mtime < mtime) {
+        return true;
+    }
+
     KVD_LOG_INFO("Persisting kvd store");
     // Open tmp file
     char filepath[] = "kvd_store.mpackXXXXXX";

@@ -18,10 +18,11 @@
 extern struct t_global_data *global_data;
 
 struct t_global_data {
-    struct mg_mgr *mg_mgr;
-    unsigned long listening_id;
+    struct mg_mgr *mg_mgr;       //!< Mongoose mgr instance
+    unsigned long listening_id;  //!< Mongoose listening id for wakeup
     struct t_config *config;     //!< Pointer to config
-    rax *kvd_store;              // The KV store
+    rax *kvd_store;              //!< The KV store
+    time_t kvd_store_mtime;      //!< Last update time of the KV store
 };
 
 struct t_mg_user_data *mg_user_data_new(struct t_config *config);

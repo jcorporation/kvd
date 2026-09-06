@@ -92,3 +92,27 @@ bool rm_file(const char *filepath) {
     }
     return true;
 }
+
+/**
+ * Returns the modification time of a file
+ * @param filepath filepath
+ * @return time_t modification time
+ */
+time_t get_mtime(const char *filepath) {
+    // Verify with lstat() to prevent TOCTTOU attacks and symlink following
+    struct stat sb;
+    errno = 0;
+    if (lstat(filepath, &sb) != 0) {
+        // File disappeared or is inaccessible, skip it
+        KVD_LOG_ERROR("Error getting mtime for \"%s\", file not accessible", filepath);
+        KVD_LOG_ERRNO(errno);
+        return 0;
+    }
+    if (S_ISREG(sb.st_mode) == false) {
+        // File type changed or is a symlink/directory, skip it
+        KVD_LOG_ERROR("Error getting mtime for \"%s\", file is not a regular file", filepath);
+        KVD_LOG_ERRNO(errno);
+        return 0;
+    }
+    return sb.st_mtime;
+}

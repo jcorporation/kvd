@@ -40,6 +40,7 @@ int main(int argc, char **argv) {
     // Central data structures
     global_data = malloc_assert(sizeof(struct t_global_data));
     global_data->kvd_store = NULL;
+    global_data->kvd_store_mtime = time(NULL);
     global_data->config = kvd_config_new();
     global_data->mg_mgr = NULL;
     global_data->listening_id = 0;
