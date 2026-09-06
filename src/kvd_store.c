@@ -89,6 +89,13 @@ enum kvd_result kvd_store_put(rax *kvd_store, const struct mg_str *key, const st
     }
 
     // Modify
+    if (value->len == data->value.len &&
+        memcmp(value->buf, data->value.buf, value->len) == 0)
+    {
+        // Not modified
+        return KVD_NOT_MODIFIED;
+    }
+
     KVD_LOG_DEBUG("Updating key \"%.*s\"", (int)key->len, key->buf);
     data->modified = time(NULL);
     free(data->value.buf);

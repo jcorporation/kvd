@@ -26,6 +26,7 @@ struct t_kvd_data {
 enum kvd_result {
     KVD_UPDATED = 200,
     KVD_CREATED = 201,
+    KVD_NOT_MODIFIED = 304
 };
 
 rax *kvd_store_init(void);
