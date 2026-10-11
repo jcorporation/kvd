@@ -14,7 +14,6 @@
 
 #include "dist/mpack/mpack.h"
 #include "src/lib/filehandler.h"
-#include "src/lib/global_data.h"
 #include "src/lib/log.h"
 #include "src/lib/mem.h"
 #include "src/lib/mpack.h"
@@ -25,29 +24,35 @@ static void kvd_data_free(struct t_kvd_data *data);
 
 // Public functions
 
-rax *kvd_store_init(void) {
-    return raxNew();
+/**
+ * Initializes the t_kvd_store struct
+ * @param kvd_store t_kvd_store struct
+ */
+void kvd_store_init(struct t_kvd_store *kvd_store) {
+    kvd_store->db = raxNew();
+    kvd_store->mtime = time(NULL);
 }
 
 /**
- * Frees the kvd_store and its data
+ * Frees the kvd_store struct and its data
  * @param r rax tree to free
  */
-void kvd_store_free(rax *rt) {
+void kvd_store_free(struct t_kvd_store *kvd_store) {
     raxIterator iter;
-    raxStart(&iter, rt);
+    raxStart(&iter, kvd_store->db);
     raxSeek(&iter, "^", NULL, 0);
     while (raxNext(&iter)) {
         kvd_data_free((struct t_kvd_data *)iter.data);
         iter.data = NULL;
     }
     raxStop(&iter);
-    raxFree(rt);
+    raxFree(kvd_store->db);
+    kvd_store->db = NULL;
 }
 
-struct t_kvd_data *kvd_store_get(rax *kvd_store, const struct mg_str *key, bool silent) {
+struct t_kvd_data *kvd_store_get(struct t_kvd_store *kvd_store, const struct mg_str *key, bool silent) {
     void *data;
-    if (raxFind(kvd_store, (unsigned char *)key->buf, key->len, &data) == 1) {
+    if (raxFind(kvd_store->db, (unsigned char *)key->buf, key->len, &data) == 1) {
         // Key was found
         if (silent == false) {
             KVD_LOG_DEBUG("Key \"%.*s\" was found.", (int)key->len, key->buf);
@@ -60,18 +65,18 @@ struct t_kvd_data *kvd_store_get(rax *kvd_store, const struct mg_str *key, bool 
     return NULL;
 }
 
-void kvd_store_delete(rax *kvd_store, const struct mg_str *key) {
+void kvd_store_delete(struct t_kvd_store *kvd_store, const struct mg_str *key) {
     void *data;
-    if (raxRemove(kvd_store, (unsigned char *)key->buf, key->len, &data) == 1) {
+    if (raxRemove(kvd_store->db, (unsigned char *)key->buf, key->len, &data) == 1) {
         kvd_data_free((struct t_kvd_data *)data);
         KVD_LOG_DEBUG("Key \"%.*s\" deleted.", (int)key->len, key->buf);
-        global_data->kvd_store_mtime = time(NULL);
+        kvd_store->mtime = time(NULL);
         return;
     }
     KVD_LOG_WARN("Key \"%.*s\" not found for deletion.", (int)key->len, key->buf);
 }
 
-enum kvd_result kvd_store_put(rax *kvd_store, const struct mg_str *key, const struct mg_str *value, const struct mg_str *content_type) {
+enum kvd_result kvd_store_put(struct t_kvd_store *kvd_store, const struct mg_str *key, const struct mg_str *value, const struct mg_str *content_type) {
     struct t_kvd_data *data = kvd_store_get(kvd_store, key, true);
     if (data == NULL) {
         // Create
@@ -83,8 +88,8 @@ enum kvd_result kvd_store_put(rax *kvd_store, const struct mg_str *key, const st
         data->value.buf = my_memcpy(value->buf, value->len);
         data->content_type.len = content_type->len;
         data->content_type.buf = my_memcpy(content_type->buf, content_type->len);
-        raxInsert(kvd_store, (unsigned char *)key->buf, key->len, data , NULL);
-        global_data->kvd_store_mtime = time(NULL);
+        raxInsert(kvd_store->db, (unsigned char *)key->buf, key->len, data , NULL);
+        kvd_store->mtime = time(NULL);
         return KVD_CREATED;
     }
 
@@ -101,11 +106,11 @@ enum kvd_result kvd_store_put(rax *kvd_store, const struct mg_str *key, const st
     free(data->value.buf);
     data->value.len = value->len;
     data->value.buf = my_memcpy(value->buf, value->len);
-    global_data->kvd_store_mtime = time(NULL);
+    kvd_store->mtime = time(NULL);
     return KVD_UPDATED;
 }
 
-bool kvd_store_read(rax *kvd_store) {
+bool kvd_store_read(struct t_kvd_store *kvd_store) {
     if (is_file(KVD_STORE_FILENAME) == false) {
         return false;
     }
@@ -144,7 +149,7 @@ bool kvd_store_read(rax *kvd_store) {
         data->created = (time_t)mpack_node_i64(mpack_node_map_cstr(node, "created"));
         data->modified = (time_t)mpack_node_i64(mpack_node_map_cstr(node, "modified"));
 
-        if (raxTryInsert(kvd_store, (unsigned char *)key, strlen(key), data, NULL) == 0) {
+        if (raxTryInsert(kvd_store->db, (unsigned char *)key, strlen(key), data, NULL) == 0) {
             KVD_LOG_ERROR("Duplicate key in kvd store file found: %s", key);
             kvd_data_free(data);
         }
@@ -159,15 +164,15 @@ bool kvd_store_read(rax *kvd_store) {
         rm_file(KVD_STORE_FILENAME);
     }
     else {
-        KVD_LOG_INFO("Read %" PRIu64 " key(s) from disc", kvd_store->numele);
-        global_data->kvd_store_mtime = time(NULL);
+        KVD_LOG_INFO("Read %" PRIu64 " key(s) from disc", kvd_store->db->numele);
+        kvd_store->mtime = time(NULL);
     }
     return rc;
 }
 
-bool kvd_store_persist(rax *kvd_store) {
+bool kvd_store_persist(struct t_kvd_store *kvd_store) {
     time_t mtime = get_mtime(KVD_STORE_FILENAME);
-    if (global_data->kvd_store_mtime < mtime) {
+    if (kvd_store->mtime < mtime) {
         return true;
     }
 
@@ -186,9 +191,9 @@ bool kvd_store_persist(rax *kvd_store) {
     mpack_build_map(&writer);
     mpack_write_kv(&writer, "version", KVD_STORE_VERSION);
     mpack_write_cstr(&writer, "keys");
-    mpack_start_array(&writer, (uint32_t)kvd_store->numele);
+    mpack_start_array(&writer, (uint32_t)kvd_store->db->numele);
     raxIterator iter;
-    raxStart(&iter, kvd_store);
+    raxStart(&iter, kvd_store->db);
     raxSeek(&iter, "^", NULL, 0);
     while (raxNext(&iter)) {
         const struct t_kvd_data *data = (struct t_kvd_data *)iter.data;

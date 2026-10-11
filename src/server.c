@@ -109,7 +109,7 @@ static void http_ev_handler(struct mg_connection *nc, int ev, void *ev_data) {
  */
 static void timer_kvd_store_persist(void *arg) {
     (void) arg;
-    kvd_store_persist(global_data->kvd_store);
+    kvd_store_persist(&global_data->kvd_store);
 }
 
 /**
@@ -150,7 +150,7 @@ static void handle_wakeup(struct mg_connection *nc, struct mg_str *data) {
         case 'W':
             // Persist data to disk
             KVD_LOG_DEBUG("SIGHUP received");
-            kvd_store_persist(global_data->kvd_store);
+            kvd_store_persist(&global_data->kvd_store);
             break;
         default:
             KVD_LOG_ERROR("Unhandled wakeup data received");

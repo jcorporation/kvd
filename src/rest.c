@@ -125,7 +125,7 @@ void rest_api_handler(struct mg_connection *nc, void *ev_data) {
 
 static void rest_list(struct mg_connection *nc) {
     raxIterator iter;
-    raxStart(&iter, global_data->kvd_store);
+    raxStart(&iter, global_data->kvd_store.db);
     raxSeek(&iter, "^", NULL, 0);
     size_t i = 0;
 
@@ -154,7 +154,7 @@ static void rest_list(struct mg_connection *nc) {
 }
 
 static void rest_get(struct mg_connection *nc, const struct mg_str *key) {
-    struct t_kvd_data *data = kvd_store_get(global_data->kvd_store, key, false);
+    struct t_kvd_data *data = kvd_store_get(&global_data->kvd_store, key, false);
     if (data == NULL) {
         mg_http_reply(nc, HTTP_NOT_FOUND, response_headers, "{\"error\":\"Key not found\"}");
         return;
@@ -172,12 +172,12 @@ static void rest_get(struct mg_connection *nc, const struct mg_str *key) {
 }
 
 static void rest_delete(struct mg_connection *nc, const struct mg_str *key) {
-    kvd_store_delete(global_data->kvd_store, key);
+    kvd_store_delete(&global_data->kvd_store, key);
     mg_http_reply(nc, HTTP_OK, response_headers, "{\"result\":\"OK\"}");
 }
 
 static void rest_options(struct mg_connection *nc, const struct mg_str *key) {
-    struct t_kvd_data *data = kvd_store_get(global_data->kvd_store, key, false);
+    struct t_kvd_data *data = kvd_store_get(&global_data->kvd_store, key, false);
     if (data == NULL) {
         mg_http_reply(nc, HTTP_NOT_FOUND, response_headers, "{\"error\":\"Key not found\"}");
         return;
@@ -198,7 +198,7 @@ static void rest_options(struct mg_connection *nc, const struct mg_str *key) {
 }
 
 static void rest_put(struct mg_connection *nc, const struct mg_str *key, struct mg_http_message *hm) {
-    if (global_data->kvd_store->numele > MAX_KEYS) {
+    if (global_data->kvd_store.db->numele > MAX_KEYS) {
         mg_http_reply(nc, INSUFFICIENT_STORAGE, response_headers, "{\"error\":\"Too many keys.\"}");
         KVD_LOG_ERROR("Too many keys");
         return;
@@ -211,7 +211,7 @@ static void rest_put(struct mg_connection *nc, const struct mg_str *key, struct 
         return;
     }
 
-    enum kvd_result result = kvd_store_put(global_data->kvd_store, key, &hm->body, content_type);
+    enum kvd_result result = kvd_store_put(&global_data->kvd_store, key, &hm->body, content_type);
     mg_http_reply(nc, (int)result, response_headers, "{\"result\":\"OK\"}");
 }
 

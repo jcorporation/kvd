@@ -39,8 +39,8 @@ int main(int argc, char **argv) {
 
     // Central data structures
     global_data = malloc_assert(sizeof(struct t_global_data));
-    global_data->kvd_store = NULL;
-    global_data->kvd_store_mtime = time(NULL);
+    global_data->kvd_store.db = NULL;
+    global_data->kvd_store.mtime = time(NULL);
     global_data->config = kvd_config_new();
     global_data->mg_mgr = NULL;
     global_data->listening_id = 0;
@@ -87,9 +87,9 @@ int main(int argc, char **argv) {
         goto cleanup;
     }
 
-    // Init kvd store
-    global_data->kvd_store = kvd_store_init();
-    kvd_store_read(global_data->kvd_store);
+    // Init and read kvd store
+    kvd_store_init(&global_data->kvd_store);
+    kvd_store_read(&global_data->kvd_store);
 
     //Run the server
     while (s_signal_received == 0) {
@@ -102,9 +102,9 @@ int main(int argc, char **argv) {
     cleanup:
 
     kvd_config_free(global_data->config);
-    if (global_data->kvd_store != NULL) {
-        kvd_store_persist(global_data->kvd_store);
-        kvd_store_free(global_data->kvd_store);
+    if (global_data->kvd_store.db != NULL) {
+        kvd_store_persist(&global_data->kvd_store);
+        kvd_store_free(&global_data->kvd_store);
     }
     if (global_data->mg_mgr != NULL) {
         mongoose_free(global_data->mg_mgr);
