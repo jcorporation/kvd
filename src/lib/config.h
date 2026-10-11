@@ -16,6 +16,7 @@
  */
 struct t_config {
     char *listen_uri;      //!< Listening URI for REST
+    char *rrdcached_uri;   //!< RRD Cached URI
     char *workdir;         //!< Working directory
 };
 

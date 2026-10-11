@@ -86,6 +86,7 @@ static void http_ev_handler(struct mg_connection *nc, int ev, void *ev_data) {
         }
         case MG_EV_OPEN: {
             nc->data[0] = '-'; // connection header
+            nc->data[1] = ' '; // backend connection marker
             if (nc->is_listening) {
                 KVD_LOG_DEBUG("Main listening connection opened");
                 global_data->listening_id = nc->id;
@@ -94,6 +95,14 @@ static void http_ev_handler(struct mg_connection *nc, int ev, void *ev_data) {
         }
         case MG_EV_HTTP_MSG: {
             rest_api_handler(nc, ev_data);
+            break;
+        }
+        case MG_EV_CLOSE: {
+            if (nc->data[1] == 'b') {
+                // There is a backend connection, close it
+                struct mg_connection *rrdcached_con = (struct mg_connection *)nc->fn_data;
+                rrdcached_con->is_closing = 1;
+            }
             break;
         }
         default: {

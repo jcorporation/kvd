@@ -22,6 +22,7 @@
 struct t_config *kvd_config_new(void) {
     struct t_config *config = malloc_assert(sizeof(struct t_config));
     config->listen_uri = strdup(LISTEN_URI);
+    config->rrdcached_uri = strdup(RRDCACHED_URI);
     config->workdir = strdup(WORKDIR);
     return config;
 }
@@ -32,6 +33,7 @@ struct t_config *kvd_config_new(void) {
  */
 void kvd_config_free(struct t_config *config) {
     FREE_PTR(config->listen_uri);
+    FREE_PTR(config->rrdcached_uri);
     FREE_PTR(config->workdir);
     FREE_PTR(config);
 }

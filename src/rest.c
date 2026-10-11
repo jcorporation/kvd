@@ -14,9 +14,11 @@
 
 #include "dist/mongoose/mongoose.h"
 #include "kvd_store.h"
+#include "rrdcached.h"
 #include "src/kvd_store.h"
 #include "src/lib/global_data.h"
 #include "src/lib/log.h"
+#include "src/lib/mem.h"
 
 // Private functions
 static void rest_list(struct mg_connection *nc);
@@ -24,19 +26,6 @@ static void rest_get(struct mg_connection *nc, const struct mg_str *key);
 static void rest_delete(struct mg_connection *nc, const struct mg_str *key);
 static void rest_options(struct mg_connection *nc, const struct mg_str *key);
 static void rest_put(struct mg_connection *nc, const struct mg_str *key, struct mg_http_message *hm);
-static void rest_handle_connection_close(struct mg_connection *nc);
-
-static const char *response_headers = "Content-Type: application/json\r\n";
-
-enum {
-    HTTP_OK = 200,
-    HTTP_CREATED = 201,
-    BAD_REQUEST = 400,
-    HTTP_NOT_FOUND = 404,
-    CONTENT_TOO_LARGE = 413,
-    NOT_IMPLEMENTED = 501,
-    INSUFFICIENT_STORAGE = 507,
-};
 
 // Public functions
 
@@ -65,7 +54,7 @@ void rest_api_handler(struct mg_connection *nc, void *ev_data) {
 
     // Enforce size limit of 1 MB
     if (hm->body.len > MAX_VALUE_SIZE) {
-        mg_http_reply(nc, CONTENT_TOO_LARGE, response_headers, 
+        mg_http_reply(nc, HTTP_CONTENT_TOO_LARGE, HTTP_HEADER_JSON,
             "{\"error\":\"Value too large, max. size is %d byte\"}",
             MAX_VALUE_SIZE
         );
@@ -83,12 +72,12 @@ void rest_api_handler(struct mg_connection *nc, void *ev_data) {
     }
     if (mg_match(hm->uri, mg_str("/kv1/#"), caps)) {
         if (caps[0].len == 0) {
-            mg_http_reply(nc, BAD_REQUEST, response_headers, "{\"error\":\"Key could not be empty.\"}");
+            mg_http_reply(nc, HTTP_BAD_REQUEST, HTTP_HEADER_JSON, "{\"error\":\"Key could not be empty.\"}");
             rest_handle_connection_close(nc);
             return;
         }
         if (caps[0].len > MAX_KEY_SIZE) {
-            mg_http_reply(nc, BAD_REQUEST, response_headers, "{\"error\":\"Key is too long.\"}");
+            mg_http_reply(nc, HTTP_BAD_REQUEST, HTTP_HEADER_JSON, "{\"error\":\"Key is too long.\"}");
             rest_handle_connection_close(nc);
             return;
         }
@@ -115,10 +104,39 @@ void rest_api_handler(struct mg_connection *nc, void *ev_data) {
             return;
         }
     }
+    else if (mg_match(hm->uri, mg_str("/rrdcached/"), caps)) {
+        if (global_data->config->rrdcached_uri[0] == '\0') {
+            mg_http_reply(nc, HTTP_NOT_IMPLEMENTED, HTTP_HEADER_JSON, "{\"error\":\"Not RRD Cached URI configured\"}");
+            rest_handle_connection_close(nc);
+            return;
+        }
+        if (mg_strcmp(hm->method, mg_str("POST")) == 0) {
+            struct t_rrdcached_data *data = rrdcached_data_new();
+            data->rest_nc = nc;
+            data->data.len = hm->body.len;
+            data->data.buf = my_memcpy(hm->body.buf, hm->body.len);
+            if (send_data_to_rrdcached(nc->mgr, data) == false) {
+                mg_http_reply(nc, HTTP_NOT_IMPLEMENTED, HTTP_HEADER_JSON, "{\"error\":\"Failure creating RRD Cached connection\"}");
+                rest_handle_connection_close(nc);
+            }
+            return;
+        }
+    }
     // Other methods are not implemented
     // Request was not handled
-    mg_http_reply(nc, NOT_IMPLEMENTED, response_headers, "{\"error\":\"Not implemented\"}");
+    mg_http_reply(nc, HTTP_NOT_IMPLEMENTED, HTTP_HEADER_JSON, "{\"error\":\"Not implemented\"}");
     rest_handle_connection_close(nc);
+}
+
+/**
+ * Drains the connection if connection is set to close
+ * @param nc mongoose connection
+ */
+void rest_handle_connection_close(struct mg_connection *nc) {
+    if (nc->data[0] == 'C') {
+        nc->is_draining = 1;
+    }
+    nc->is_resp = 0;
 }
 
 // Private functions
@@ -156,7 +174,7 @@ static void rest_list(struct mg_connection *nc) {
 static void rest_get(struct mg_connection *nc, const struct mg_str *key) {
     struct t_kvd_data *data = kvd_store_get(&global_data->kvd_store, key, false);
     if (data == NULL) {
-        mg_http_reply(nc, HTTP_NOT_FOUND, response_headers, "{\"error\":\"Key not found\"}");
+        mg_http_reply(nc, HTTP_NOT_FOUND, HTTP_HEADER_JSON, "{\"error\":\"Key not found\"}");
         return;
     }
 
@@ -173,16 +191,16 @@ static void rest_get(struct mg_connection *nc, const struct mg_str *key) {
 
 static void rest_delete(struct mg_connection *nc, const struct mg_str *key) {
     kvd_store_delete(&global_data->kvd_store, key);
-    mg_http_reply(nc, HTTP_OK, response_headers, "{\"result\":\"OK\"}");
+    mg_http_reply(nc, HTTP_OK, HTTP_HEADER_JSON, "{\"result\":\"OK\"}");
 }
 
 static void rest_options(struct mg_connection *nc, const struct mg_str *key) {
     struct t_kvd_data *data = kvd_store_get(&global_data->kvd_store, key, false);
     if (data == NULL) {
-        mg_http_reply(nc, HTTP_NOT_FOUND, response_headers, "{\"error\":\"Key not found\"}");
+        mg_http_reply(nc, HTTP_NOT_FOUND, HTTP_HEADER_JSON, "{\"error\":\"Key not found\"}");
         return;
     }
-    mg_http_reply(nc, HTTP_OK, response_headers,
+    mg_http_reply(nc, HTTP_OK, HTTP_HEADER_JSON,
         "{%m:{"
             "%m: %m,"
             "%m: %lld,"
@@ -199,29 +217,18 @@ static void rest_options(struct mg_connection *nc, const struct mg_str *key) {
 
 static void rest_put(struct mg_connection *nc, const struct mg_str *key, struct mg_http_message *hm) {
     if (global_data->kvd_store.db->numele > MAX_KEYS) {
-        mg_http_reply(nc, INSUFFICIENT_STORAGE, response_headers, "{\"error\":\"Too many keys.\"}");
+        mg_http_reply(nc, HTTP_INSUFFICIENT_STORAGE, HTTP_HEADER_JSON, "{\"error\":\"Too many keys.\"}");
         KVD_LOG_ERROR("Too many keys");
         return;
     }
 
     const struct mg_str *content_type = mg_http_get_header(hm, "content-type");
     if (content_type == NULL) {
-        mg_http_reply(nc, BAD_REQUEST, response_headers, "{\"error\":\"Content-Type header not found\"}");
+        mg_http_reply(nc, HTTP_BAD_REQUEST, HTTP_HEADER_JSON, "{\"error\":\"Content-Type header not found\"}");
         KVD_LOG_ERROR("Content-Type header not found");
         return;
     }
 
     enum kvd_result result = kvd_store_put(&global_data->kvd_store, key, &hm->body, content_type);
-    mg_http_reply(nc, (int)result, response_headers, "{\"result\":\"OK\"}");
-}
-
-/**
- * Drains the connection if connection is set to close
- * @param nc mongoose connection
- */
-static void rest_handle_connection_close(struct mg_connection *nc) {
-    if (nc->data[0] == 'C') {
-        nc->is_draining = 1;
-    }
-    nc->is_resp = 0;
+    mg_http_reply(nc, (int)result, HTTP_HEADER_JSON, "{\"result\":\"OK\"}");
 }

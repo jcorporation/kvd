@@ -26,6 +26,7 @@ static struct option long_options[] = {
     {"help",      no_argument,       0, 'h'},
     {"listen",    required_argument, 0, 'l'},
     {"loglevel",  required_argument, 0, 'o'},
+    {"rrdcached", required_argument, 0, 'd'},
     {"version",   no_argument,       0, 'v'},
     {"workdir",   required_argument, 0, 'w'}
 };
@@ -41,12 +42,13 @@ static void print_usage(struct t_config *config, const char *cmd) {
         "(c) 2026 Juergen Mang <mail@jcgames.de>\n"
         "https://github.com/jcorporation/kvd\n\n"
         "Options:\n"
+        "  -d, --rrdcached <uri>   rrdcached uri (default: %s)\n"
         "  -h, --help              Displays this help\n"
         "  -l, --listen <uri>      Listen URI for REST-API (default: %s)\n"
         "  -o, --loglevel <level>  Syslog loglevel (default: 5 - NOTICE)\n"
         "  -v, --version           Displays this help\n"
         "  -w, --workdir <folder>  Working directory (default: %s)\n\n",
-        cmd, KVD_VERSION, config->listen_uri, config->workdir);
+        cmd, KVD_VERSION, config->rrdcached_uri, config->listen_uri, config->workdir);
 }
 
 /**
@@ -61,8 +63,12 @@ static void print_usage(struct t_config *config, const char *cmd) {
 enum handle_options_rc handle_options(struct t_config *config, int argc, char **argv) {
     int n = 0;
     int option_index = 0;
-    while ((n = getopt_long(argc, argv, "l:o:vhw:", long_options, &option_index)) != -1) {
+    while ((n = getopt_long(argc, argv, "d:l:o:vhw:", long_options, &option_index)) != -1) {
         switch(n) {
+            case 'd':
+                FREE_PTR(config->rrdcached_uri);
+                config->rrdcached_uri = my_strdup(optarg, strlen(optarg));
+                break;
             case 'l':
                 FREE_PTR(config->listen_uri);
                 config->listen_uri = my_strdup(optarg, strlen(optarg));

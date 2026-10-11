@@ -16,11 +16,12 @@ After this you find the binary in the `build/bin/` folder.
 ```sh
 Usage: kvd [option...]
 
-KVD 0.0.1
+KVD 0.0.2
 (c) 2026 Juergen Mang <mail@jcgames.de>
 https://github.com/jcorporation/kvd
 
 Options:
+  -d, --rrdcached <uri>   rrdcached uri (default: empty)
   -h, --help              Displays this help
   -l, --listen <uri>      REST listen URI (default: http://0.0.0.0:8091)
   -o, --loglevel <level>  Syslog loglevel (default: 5 - NOTICE)
@@ -30,11 +31,12 @@ Options:
 
 ## REST API
 
-| PATH         | METHOD  | DESCRIPTION |
-| ------------ | ------- | ----------- |
-| `/kv1/`      | GET     | List all keys with metadata | 
-| `/kv1/<key>` | DELETE  | Delete a key. |
-| `/kv1/<key>` | GET     | Get a value. |
-| `/kv1/<key>` | OPTIONS | Get key metadata. |
-| `/kv1/<key>` | PUT     | Write a key / value pair. |
-| `/kv1/<key>` | POST    | Same as PUT. |
+| PATH          | METHOD  | DESCRIPTION |
+| ------------- | ------- | ----------- |
+| `/kv1/`       | GET     | List all keys with metadata |
+| `/kv1/<key>`  | DELETE  | Delete a key. |
+| `/kv1/<key>`  | GET     | Get a value. |
+| `/kv1/<key>`  | OPTIONS | Get key metadata. |
+| `/kv1/<key>`  | PUT     | Write a key / value pair. |
+| `/kv1/<key>`  | POST    | Same as PUT. |
+| `/rrdcached/` | POST    | Simple RRD Cached proxy. |

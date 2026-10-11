@@ -31,5 +31,6 @@ target_sources(kvd
     kvd_store.c
     main.c
     rest.c
+    rrdcached.c
     server.c
 )
