@@ -30,10 +30,11 @@ Options:
 
 ## REST API
 
-| METHOD | PATH | DESCRIPTION |
-| ------ | ---- | ----------- |
-| DELETE | `/kv1/<key>` | Delete a key. |
-| GET | `/kv1/<key>` | Get a value. |
-| OPTIONS | `/kv1/<key>` | Get key metadata. |
-| PUT | `/kv1/<key>` | Write a key / value pair. |
-| POST | `/kv1/<key>` | Same as PUT. |
+| PATH         | METHOD  | DESCRIPTION |
+| ------------ | ------- | ----------- |
+| `/kv1/`      | GET     | List all keys with metadata | 
+| `/kv1/<key>` | DELETE  | Delete a key. |
+| `/kv1/<key>` | GET     | Get a value. |
+| `/kv1/<key>` | OPTIONS | Get key metadata. |
+| `/kv1/<key>` | PUT     | Write a key / value pair. |
+| `/kv1/<key>` | POST    | Same as PUT. |
