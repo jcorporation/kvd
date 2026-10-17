@@ -23,10 +23,13 @@ static void ev_handler_rrdcached(struct mg_connection *nc, int ev, void *ev_data
 
 // Public functions
 
-struct t_rrdcached_data *rrdcached_data_new(void) {
+struct t_rrdcached_data *rrdcached_data_new(struct mg_connection *nc, struct mg_str *value) {
     struct t_rrdcached_data *data = malloc_assert(sizeof(struct t_rrdcached_data));
     data->lines_expected = 0;
     data->lines_received = 0;
+    data->rest_nc = nc;
+    data->data.len = value->len;
+    data->data.buf = my_memcpy(value->buf, value->len);
     return data;
 }
 

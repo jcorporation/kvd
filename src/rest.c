@@ -111,10 +111,7 @@ void rest_api_handler(struct mg_connection *nc, void *ev_data) {
             return;
         }
         if (mg_strcmp(hm->method, mg_str("POST")) == 0) {
-            struct t_rrdcached_data *data = rrdcached_data_new();
-            data->rest_nc = nc;
-            data->data.len = hm->body.len;
-            data->data.buf = my_memcpy(hm->body.buf, hm->body.len);
+            struct t_rrdcached_data *data = rrdcached_data_new(nc, &hm->body);
             if (send_data_to_rrdcached(nc->mgr, data) == false) {
                 mg_http_reply(nc, HTTP_NOT_IMPLEMENTED, HTTP_HEADER_JSON, "{\"error\":\"Failure creating RRD Cached connection\"}");
                 rest_handle_connection_close(nc);
