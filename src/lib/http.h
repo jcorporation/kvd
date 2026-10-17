@@ -5,11 +5,11 @@
 */
 
 /*! \file
- * \brief REST API implementation
+ * \brief HTTP helper library
  */
 
-#ifndef KVD_REST_H
-#define KVD_REST_H
+#ifndef KVD_LIB_HTTP_H
+#define KVD_LIB_HTTP_H
 
 #include "dist/mongoose/mongoose.h"
 
@@ -27,7 +27,6 @@ enum {
 #define HTTP_HEADER_JSON "Content-Type: application/json\r\n"
 #define HTTP_HEADER_PLAIN "Content-Type: text/plain\r\n"
 
-void rest_api_handler(struct mg_connection *nc, void *ev_data);
-void rest_handle_connection_close(struct mg_connection *nc);
+void http_handle_connection_close(struct mg_connection *nc);
 
 #endif

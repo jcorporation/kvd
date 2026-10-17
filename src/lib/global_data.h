@@ -8,8 +8,8 @@
  * \brief Custom global data structure
  */
 
-#ifndef KVD_GLOBAL_DATA_H
-#define KVD_GLOBAL_DATA_H
+#ifndef KVD_LIB_GLOBAL_DATA_H
+#define KVD_LIB_GLOBAL_DATA_H
 
 #include "dist/mongoose/mongoose.h"
 #include "src/kvd_store.h"

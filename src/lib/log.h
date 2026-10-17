@@ -4,8 +4,8 @@
  https://github.com/jcorporation/kvd
 */
 
-#ifndef KVD_LOG_H
-#define KVD_LOG_H
+#ifndef KVD_LIB_LOG_H
+#define KVD_LIB_LOG_H
 
 #include <stdbool.h>
 #include <syslog.h>

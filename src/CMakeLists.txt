@@ -23,14 +23,16 @@ target_sources(kvd
     lib/config.c
     lib/filehandler.c
     lib/global_data.c
+    lib/http.c
     lib/log.c
     lib/mem.c
     lib/mpack.c
     lib/options.c
     lib/signal.c
+    http_request.c
+    http_server.c
+    kvd_rest.c
     kvd_store.c
     main.c
-    rest.c
     rrdcached.c
-    server.c
 )

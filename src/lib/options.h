@@ -8,8 +8,8 @@
  * \brief Command line options handling
  */
 
-#ifndef KVD_OPTIONS_H
-#define KVD_OPTIONS_H
+#ifndef KVD_LIB_OPTIONS_H
+#define KVD_LIB_OPTIONS_H
 
 #include "src/lib/config.h"
 

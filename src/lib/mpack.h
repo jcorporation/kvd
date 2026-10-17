@@ -8,8 +8,8 @@
  * \brief Helper functions for mpack
  */
 
-#ifndef KVD_MPACK_H
-#define KVD_MPACK_H
+#ifndef KVD_LIB_MPACK_H
+#define KVD_LIB_MPACK_H
 
 #include "dist/mpack/mpack.h"
 

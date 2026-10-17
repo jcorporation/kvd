@@ -6,6 +6,7 @@
 
 #include "compile_time.h"
 #include "dist/mongoose/mongoose.h"
+#include "src/http_server.h"
 #include "src/kvd_store.h"
 #include "src/lib/config.h"
 #include "src/lib/global_data.h"
@@ -13,7 +14,6 @@
 #include "src/lib/mem.h"
 #include "src/lib/options.h"
 #include "src/lib/signal.h"
-#include "src/server.h"
 
 #include <errno.h>
 

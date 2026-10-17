@@ -4,8 +4,8 @@
  https://github.com/jcorporation/kvd
 */
 
-#ifndef KVD_MEM_H
-#define KVD_MEM_H
+#ifndef KVD_LIB_MEM_H
+#define KVD_LIB_MEM_H
 
 #include "src/lib/log.h"
 

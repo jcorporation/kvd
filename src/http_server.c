@@ -8,14 +8,14 @@
  * \brief Mongoose server implementation
  */
 
-#include "src/server.h"
+#include "src/http_server.h"
 
 #include "dist/mongoose/mongoose.h"
+#include "src/http_request.h"
 #include "src/kvd_store.h"
 #include "src/lib/global_data.h"
 #include "src/lib/log.h"
 #include "src/lib/mem.h"
-#include "src/rest.h"
 
 #include <stdbool.h>
 
@@ -94,7 +94,7 @@ static void http_ev_handler(struct mg_connection *nc, int ev, void *ev_data) {
             break;
         }
         case MG_EV_HTTP_MSG: {
-            rest_api_handler(nc, ev_data);
+            request_handler(nc, ev_data);
             break;
         }
         case MG_EV_CLOSE: {

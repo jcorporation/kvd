@@ -8,8 +8,8 @@
  * \brief Central KVD configuration definitions
  */
 
-#ifndef KVD_CONFIG_H
-#define KVD_CONFIG_H
+#ifndef KVD_LIB_CONFIG_H
+#define KVD_LIB_CONFIG_H
 
 /**
  * Static KVD configuration

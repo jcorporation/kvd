@@ -12,9 +12,10 @@
 
 #include "dist/mongoose/mongoose.h"
 #include "src/lib/global_data.h"
+#include "src/lib/http.h"
 #include "src/lib/log.h"
 #include "src/lib/mem.h"
-#include "src/rest.h"
+
 #include <stdint.h>
 
 // Private definitions
@@ -112,7 +113,7 @@ static void ev_handler_rrdcached(struct mg_connection *nc, int ev, void *ev_data
             // Parsing error
             if (val == INT32_MIN) {
                 mg_http_reply(data->rest_nc, HTTP_BAD_GATEWAY, HTTP_HEADER_PLAIN, "Unparsable RRD Cached response");
-                rest_handle_connection_close(data->rest_nc);
+                http_handle_connection_close(data->rest_nc);
                 // Close connection to rrdcached
                 nc->is_draining = 1;
                 mg_iobuf_del(&nc->recv, 0, nc->recv.len);
@@ -123,7 +124,7 @@ static void ev_handler_rrdcached(struct mg_connection *nc, int ev, void *ev_data
                 KVD_LOG_ERROR("RRDCached: Error from rrdcached %d", val);
                 mg_http_reply(data->rest_nc, HTTP_BAD_GATEWAY, HTTP_HEADER_PLAIN, "%.*s",
                     (int)nc->recv.len, nc->recv.buf);
-                rest_handle_connection_close(data->rest_nc);
+                http_handle_connection_close(data->rest_nc);
                 // Close connection to rrdcached
                 nc->is_draining = 1;
                 mg_iobuf_del(&nc->recv, 0, nc->recv.len);
@@ -133,7 +134,7 @@ static void ev_handler_rrdcached(struct mg_connection *nc, int ev, void *ev_data
             if (val == 0) {
                 mg_http_reply(data->rest_nc, HTTP_OK, HTTP_HEADER_PLAIN, "%.*s",
                     (int)nc->recv.len, nc->recv.buf);
-                rest_handle_connection_close(data->rest_nc);
+                http_handle_connection_close(data->rest_nc);
                 // Close connection to rrdcached
                 nc->is_draining = 1;
                 mg_iobuf_del(&nc->recv, 0, nc->recv.len);
@@ -160,7 +161,7 @@ static void ev_handler_rrdcached(struct mg_connection *nc, int ev, void *ev_data
         if (data->lines_received == data->lines_expected) {
             // Complete RRD Cached response received, send empty chunk to http client
             mg_http_printf_chunk(data->rest_nc, "");
-            rest_handle_connection_close(data->rest_nc);
+            http_handle_connection_close(data->rest_nc);
             // And close rrdcached connection
             nc->is_draining = 1;
         }

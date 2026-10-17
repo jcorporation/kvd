@@ -8,8 +8,8 @@
  * \brief Command line options handling
  */
 
-#ifndef KVD_SIGNAL_H
-#define KVD_SIGNAL_H
+#ifndef KVD_LIB_SIGNAL_H
+#define KVD_LIB_SIGNAL_H
 
 #include <signal.h>
 #include <stdbool.h>

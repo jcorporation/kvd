@@ -4,8 +4,8 @@
  https://github.com/jcorporation/kvd
 */
 
-#ifndef KVD_FILE_H
-#define KVD_FILE_H
+#ifndef KVD_LIB_FILE_H
+#define KVD_LIB_FILE_H
 
 #include <stdbool.h>
 #include <stdio.h>
