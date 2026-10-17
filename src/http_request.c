@@ -55,14 +55,9 @@ void request_handler(struct mg_connection *nc, void *ev_data) {
 
     // Match uri
     struct mg_str caps[2];
-    if (mg_match(hm->uri, mg_str("/kv1/"), NULL)) {
-        request_kvd_list(nc);
-        http_handle_connection_close(nc);
-        return;
-    }
     if (mg_match(hm->uri, mg_str("/kv1/#"), caps)) {
         if (caps[0].len == 0) {
-            mg_http_reply(nc, HTTP_BAD_REQUEST, HTTP_HEADER_JSON, "{\"error\":\"Key could not be empty.\"}");
+            request_kvd_list(nc);
             http_handle_connection_close(nc);
             return;
         }
@@ -94,16 +89,53 @@ void request_handler(struct mg_connection *nc, void *ev_data) {
             return;
         }
     }
-    else if (mg_match(hm->uri, mg_str("/rrdcached/"), caps)) {
+    else if (mg_match(hm->uri, mg_str("/rrdcached/#"), caps)) {
         if (global_data->config->rrdcached_uri[0] == '\0') {
             mg_http_reply(nc, HTTP_NOT_IMPLEMENTED, HTTP_HEADER_JSON, "{\"error\":\"Not RRD Cached URI configured\"}");
             http_handle_connection_close(nc);
             return;
         }
+        if (caps[0].len == 0) {
+            if (mg_strcmp(hm->method, mg_str("GET")) == 0) {
+                struct mg_str command = mg_str("LIST RECURSIVE /");
+                struct t_rrdcached_data *data = rrdcached_data_new(nc, &command, true);
+                if (rrdcached_send(nc->mgr, data) == false) {
+                    mg_http_reply(nc, HTTP_BAD_GATEWAY, HTTP_HEADER_JSON, "{\"error\":\"Failure creating RRD Cached connection\"}");
+                    http_handle_connection_close(nc);
+                }
+                return;
+            }
+            if (mg_strcmp(hm->method, mg_str("POST")) == 0) {
+                struct t_rrdcached_data *data = rrdcached_data_new(nc, &hm->body, true);
+                if (rrdcached_send(nc->mgr, data) == false) {
+                    mg_http_reply(nc, HTTP_BAD_GATEWAY, HTTP_HEADER_JSON, "{\"error\":\"Failure creating RRD Cached connection\"}");
+                    http_handle_connection_close(nc);
+                }
+                return;
+            }
+        }
+        if (caps[0].len > MAX_KEY_SIZE) {
+            mg_http_reply(nc, HTTP_BAD_REQUEST, HTTP_HEADER_JSON, "{\"error\":\"Key is too long.\"}");
+            http_handle_connection_close(nc);
+            return;
+        }
+        if (mg_strcmp(hm->method, mg_str("OPTIONS")) == 0) {
+            if (rrdcached_command(nc, "INFO", &caps[0], &hm->body) == false) {
+                mg_http_reply(nc, HTTP_BAD_GATEWAY, HTTP_HEADER_JSON, "{\"error\":\"Failure creating RRD Cached connection\"}");
+                http_handle_connection_close(nc);
+            }
+            return;
+        }
         if (mg_strcmp(hm->method, mg_str("POST")) == 0) {
-            struct t_rrdcached_data *data = rrdcached_data_new(nc, &hm->body);
-            if (send_data_to_rrdcached(nc->mgr, data) == false) {
-                mg_http_reply(nc, HTTP_NOT_IMPLEMENTED, HTTP_HEADER_JSON, "{\"error\":\"Failure creating RRD Cached connection\"}");
+            if (rrdcached_command(nc, "FETCH", &caps[0], &hm->body) == false) {
+                mg_http_reply(nc, HTTP_BAD_GATEWAY, HTTP_HEADER_JSON, "{\"error\":\"Failure creating RRD Cached connection\"}");
+                http_handle_connection_close(nc);
+            }
+            return;
+        }
+        if (mg_strcmp(hm->method, mg_str("PUT")) == 0) {
+            if (rrdcached_command(nc, "UPDATE", &caps[0], &hm->body) == false) {
+                mg_http_reply(nc, HTTP_BAD_GATEWAY, HTTP_HEADER_JSON, "{\"error\":\"Failure creating RRD Cached connection\"}");
                 http_handle_connection_close(nc);
             }
             return;

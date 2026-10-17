@@ -133,6 +133,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   )
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
 elseif(CMAKE_BUILD_TYPE MATCHES "(Release|RelWithDebInfo|MinSizeRel)")
+  add_compile_definitions("NDEBUG")
   add_compile_options(
     "-fPIE"
     "-O2"

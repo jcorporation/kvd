@@ -23,8 +23,10 @@ struct t_rrdcached_data {
     int32_t lines_received;        //!< Number of lines read
 };
 
-struct t_rrdcached_data *rrdcached_data_new(struct mg_connection *nc, struct mg_str *value);
+struct t_rrdcached_data *rrdcached_data_new(struct mg_connection *rest_nc, struct mg_str *value, bool copy);
 void rrdcached_data_free(struct t_rrdcached_data *data);
-bool send_data_to_rrdcached(struct mg_mgr *mgr, struct t_rrdcached_data *data);
+
+bool rrdcached_send(struct mg_mgr *mgr, struct t_rrdcached_data *data);
+bool rrdcached_command(struct mg_connection *rest_nc, const char *command, struct mg_str *filename, struct mg_str *values);
 
 #endif

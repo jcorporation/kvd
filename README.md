@@ -39,4 +39,34 @@ Options:
 | `/kv1/<key>`  | OPTIONS | Get key metadata. |
 | `/kv1/<key>`  | PUT     | Write a key / value pair. |
 | `/kv1/<key>`  | POST    | Same as PUT. |
-| `/rrdcached/` | POST    | Simple RRD Cached proxy. |
+| `/rrdcached/` | GET     | Lists RRD Cached databases recursively. |
+| `/rrdcached/` | POST    | Generic RRD Cached proxy. |
+| `/rrdcached/<filename>` | OPTIONS | Sends the INFO command to RRD Cached. |
+| `/rrdcached/<filename>` | POST | Sends the FETCH command to RRD Cached. |
+| `/rrdcached/<filename>` | PUT | Sends the UPDATE command to RRD Cached. |
+
+## Examples
+
+### RRD Cached Generic
+
+```sh
+curl -v http://localhost:8091/rrdcached/ -d@- <<< 'FETCH test.rrd AVERAGE'
+```
+
+### RRD Cached Info
+
+```sh
+curl -v -X OPTIONS http://localhost:8091/rrdcached/test.rrd
+```
+
+### RRD Cached Fetch
+
+```sh
+curl -v -X POST http://localhost:8091/rrdcached/test.rrd -d@- <<< 'AVERAGE'
+```
+
+### RRD Cached Update
+
+```sh
+curl -v -X PUT http://localhost:8091/rrdcached/test.rrd -d@- <<< 'N:12:12'
+```

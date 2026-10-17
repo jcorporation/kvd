@@ -5,7 +5,7 @@
 */
 
 /*! \file
- * \brief Send data to RRDCached
+ * \brief Send data to RRD Cached
  */
 
 #include "src/rrdcached.h"
@@ -24,13 +24,15 @@ static void ev_handler_rrdcached(struct mg_connection *nc, int ev, void *ev_data
 
 // Public functions
 
-struct t_rrdcached_data *rrdcached_data_new(struct mg_connection *nc, struct mg_str *value) {
+struct t_rrdcached_data *rrdcached_data_new(struct mg_connection *rest_nc, struct mg_str *value, bool copy) {
     struct t_rrdcached_data *data = malloc_assert(sizeof(struct t_rrdcached_data));
     data->lines_expected = 0;
     data->lines_received = 0;
-    data->rest_nc = nc;
+    data->rest_nc = rest_nc;
     data->data.len = value->len;
-    data->data.buf = my_memcpy(value->buf, value->len);
+    data->data.buf = copy == true
+        ? my_memcpy(value->buf, value->len)
+        : value->buf;
     return data;
 }
 
@@ -44,18 +46,39 @@ void rrdcached_data_free(struct t_rrdcached_data *data) {
 }
 
 /**
- * Sends the data to a RRDCached instance
+ * Sends the data to a RRD Cached instance
  * @param mgr Mongoose mgr
  * @param data Data to send
  * @param data_len Data Length
  */
-bool send_data_to_rrdcached(struct mg_mgr *mgr, struct t_rrdcached_data *data) {
+bool rrdcached_send(struct mg_mgr *mgr, struct t_rrdcached_data *data) {
     if (mg_connect(mgr, global_data->config->rrdcached_uri, ev_handler_rrdcached, data) == NULL) {
         KVD_LOG_ERROR("RRDCached: Error creating connection to: %s", global_data->config->rrdcached_uri);
         rrdcached_data_free(data);
         return false;
     }
     return true;
+}
+
+/**
+ * Sends a RRD Cached command
+ * @param rest_nc REST API connection
+ * @param filename RRD filename
+ * @param values Values to send
+ * @return true on success, else false
+ */
+bool rrdcached_command(struct mg_connection *rest_nc, const char *command, struct mg_str *filename, struct mg_str *values) {
+    size_t buf_len = strlen(command) + 1 + filename->len + 1;
+    if (values->len > 0) {
+        buf_len += values->len + 1;
+    }
+    char *buf = malloc_assert(buf_len);
+    mg_snprintf(buf, buf_len, "UPDATE %.*s %.*s",
+        (int)filename->len, filename->buf,
+        (int)values->len, values->buf);
+    struct mg_str send_str = mg_str_n(buf, buf_len);
+    struct t_rrdcached_data *data = rrdcached_data_new(rest_nc, &send_str, false);
+    return rrdcached_send(rest_nc->mgr, data);
 }
 
 // Private functions
